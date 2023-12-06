@@ -1,0 +1,27 @@
+body
+{
+    margin-left: 25%;
+    margin-right: 25%;
+}
+
+header
+{
+    text-align: center;
+}
+
+header>h1
+{
+    font-size: 4em;
+    margin-bottom: 0px;
+}
+
+header>h2
+{
+    font-size: 2em;
+    margin-top: 0px;
+}
+
+main
+{
+    text-align: justify;
+}

@@ -1,0 +1,70 @@
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="./index.css">
+        <title>DS 220 Project #2 - Aryan Sinha</title>
+    </head>
+    <body>
+        <header>
+            <h1>DS 220 Project #2</h1>
+            <h2>Aryan Sinha</h2>
+        </header>
+        <main>
+            <p>This page is the website portion of my DS 220 Project #2 submission. This project required me to:
+                <ul>
+                    <li>Identify a raw public dataset of interest to me and download the raw data to my computer.</li>
+                    <li>Frame some 6 to 10 questions that me or others in the area may want to answer analyzing this data.</li>
+                    <li>Load my data set into a Pandas DataFrame and do some preprocessing and cleaning if needed.</li>
+                    <li>Perform exploratory data analysis & visualization.</li>
+                    <li>Map my questions as queries on the Pandas dataframe to generate answers.</li>
+                    <li>Derive insight(s) using answers to my questions.</li>
+                    <li>Communicate those insights as actionable text or a story that may be easy to communicate and share with others in the same dataset.</li>
+                    <li>Publish my work on GitHub pages at a reachable URL.</li>
+                </ul>
+                For this project, I have chosen to use the SmashData Ultimate Player Database (which can be downloaded from <a href="https://github.com/smashdata/ThePlayerDatabase">here</a>). I have specifically chosen to use <a href="https://github.com/smashdata/ThePlayerDatabase/releases/tag/v2023.11.26">this release</a>, which was published on November 27, 2023 and includes data up through November 26, 2023. This dataset is of great interest to me, as I am an active member of the Super Smash Bros. Ultimate community, both here at Penn State and outside of Penn State. I have met a lot of my closest friends through this community and feel that I, along with those friends and other members of the community, would be able to gain a lot from my analysis on this dataset. This dataset contains historical data on players and tournaments.
+                <br />
+                The data is stored in an SQLite database, meaning all relevant data must be acquired from said database. The said database contains the following tables:
+                <ul>
+                    <li><code>players</code>, which contains information about players.</li>
+                    <li><code>ranking</code>, which contains ranking information about players.</li>
+                    <li><code>ranking_seasons</code>, which contains ranking information about players each season.</li>
+                    <li><code>sets</code>, which contains information about tournament sets.</li>
+                    <li><code>tournaments</code>, which contains information about tournaments.</li>
+                </ul>
+                For this project, I will only be using the <code>players</code>, <code>sets</code>, and <code>tournaments</code> tables, as they are the most relevant for my use case.
+                <br />
+                The questions I plan to answer with this assignment are as follows:
+                <ol>
+                    <li>How has the average number of entrants for tournaments changed over time?</li>
+                    <li>Who are the most played characters of all time?</li>
+                    <li>How has a character's win-rate changed over time?</li>
+                    <li>How has a character's popularity changed over time?</li>
+                    <li>How has a player's game win-rate changed over time?</li>
+                    <li>How has a player's set win-rate chagned over time?</li>
+                </ol>
+            </p>
+            <article>
+                <h1>How has the average number of entrants for tournaments changed over time?</h1>
+            </article>
+            <article>
+                <h1>Who are the most played characters of all time?</h1>
+            </article>
+            <article>
+                <h1>How has a character's win-rate changed over time?</h1>
+            </article>
+            <article>
+                <h1>How has a character's popularity changed over time?</h1>
+            </article>
+            <article>
+                <h1>How has a player's game win-rate changed over time?</h1>
+            </article>
+            <article>
+                <h1>How has a player's set win-rate changed over time?</h1>
+            </article>
+        </main>
+        <footer>
+
+        </footer>
+    </body>
+</html>
