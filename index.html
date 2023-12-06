@@ -451,6 +451,25 @@ plt.show()</code>
             </article>
             <article>
                 <h1>How has a character's popularity changed over time?</h1>
+                <p>
+                    The code from the preious question was set up in such a way that it included how many games were reported for the character in the final output. Instead of graphing the <code>"Win-Rate"</code> field, we need to graph the <code>"Games Reported"</code> field, which would be done like this:
+                    <pre>
+                        <code class="language-python"># Graph the data to a line plot and a scatter plot
+plt.title("Zelda's Popularity Each Month")
+plt.xlabel("Month")
+plt.ylabel("Games Reported")
+plt.xticks(rotation=90)
+plt.plot(win_rate_df["Month"].values, win_rate_df["Games Reported"].values)
+plt.scatter(win_rate_df["Month"].values, win_rate_df["Games Reported"].values)
+plt.show()</code>
+                    </pre>
+                    This would result in the following graph:
+                    <br />
+                    <canvas id="zelda_popularity_per_month_chart" style="width: 100%;"></canvas>
+                    <script type="module" src="zelda_popularity_per_month_chart.js"></script>
+                    <br />
+                    Using this, we can see that Zelda's popularity spiked starting in March of 2020 (obviously due to COVID) and while that popularity has since decreased, Zelda is still far more popular than before the pandemic. Using this, it's safe to assume a good portion of the players who started playing Zelda over lockdown either started playing in more offline tournaments or many stopped playing in online tournaments.
+                </p>
             </article>
             <article>
                 <h1>How has a player's game win-rate changed over time?</h1>
