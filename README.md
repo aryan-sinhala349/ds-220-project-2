@@ -330,7 +330,7 @@ for month in months:
     # Execute the query and convert the data from a list of tuples to a list of strings
     cursor.execute(query)
     sets_in_month_with_character = cursor.fetchall()
-    sets_in_month_with_character = [ sets_in_month_with_character[0] for set_in_month in sets_in_month_with_character ]
+    sets_in_month_with_character = [ set_in_month_with_character[0] for set_in_month in sets_in_month_with_character ]
 
     # Edge case: if there are no reported games for this characer in this month (which is likely to happen) then skip this month
     if len(sets_in_month_with_character) == 0:
@@ -356,12 +356,9 @@ for month in months:
             if winner_char == character:
                 games_reported += 1
                 games_won += 1
-            elif loser_char == character:
+            
+            if loser_char == character:
                 games_reported += 1
-
-    # Close the connection to the database
-    cursor.close()
-    conn.close()
 
     # Calculate the win-rate (while accounting for the edge case of games_reported being 0 to prevent a divide by zero)
     win_rate = 0
@@ -370,6 +367,10 @@ for month in months:
         win_rate = games_won / games_reported
 
     win_rate_df.loc[len(win_rates_df)] = [ month, games_won, games_reported, win_rate ]
+
+# Close the connection to the database
+cursor.close()
+conn.close()
 
 # Convert the dates from %m-%Y format to %B %Y format
 win_rate_df["Month"] = pd.to_datetime(win_rate_df["Month"], format="%m-%Y")

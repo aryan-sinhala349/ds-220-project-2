@@ -277,6 +277,177 @@ plt.show()</code>
             </article>
             <article>
                 <h1>How has a character's win-rate changed over time?</h1>
+                <p>
+                    This question will require multiple queries. While I have no doubt this could be done with joint queries, I feel this is most readable with multiple separate queries. If I were to make an application with this data, I would absolutely use joint queries. To start, we need to make a query for each month in this database:
+                    <pre>
+                        <code class="language-sql">/* Select the month */
+SELECT STRFTIME('%m-%Y', start, 'unixepoch')
+/* From the tournament_info table */
+FROM tournament_info
+/* That happened after the game's release */
+WHERE start >= 1544158800
+/* Group by month */
+GROUP BY STRFTIME('%m-%Y', start, 'unixepoch')
+/* In ascending order */
+ORDER BY start ASC;</code>
+                    </pre>
+                    From this, we're able to get a list of each month in the database. This is better than listing out each month individually as we can update the database in the future and have this code still work. From here, we would iterate through each individual month and get each tournament that occurred that month:
+                    <pre>
+                        <code class="language-sql">/* Select the tournament's key */
+SELECT key
+/* From the tournament_info table */
+FROM tournament_info
+/* Which occurred in the specified month */
+WHERE STRFTIME('%m-%Y', start, 'unixepoch') = '&lt;month&gt;';</code>
+                    </pre>
+                    Where <code>&lt;month&gt;</code> is replaced with the month from this specific iteration. Form there, we can find all of the sets that occurred in these tournaments with any games reported for the specific character:
+                    <pre>
+                        <code class="language-sql">/* Select the game data */
+SELECT game_data
+/* From the sets table */
+FROM sets
+/* That ocurred in one of the desired tournaments */
+WHERE tournament_key IN &lt;tournament_list&gt;
+  /* And there is valid game data */
+  AND game_data IS NOT NULL
+  AND game_data != '[]'
+  /* And at least one of the games included the character of interest */
+  AND game_data LIKE '%&lt;character&gt;%';</code>
+                    </pre>
+                    Where <code>&lt;tournament_list&gt;</code> is the list of all tournaments that occurred in a specific month and <code>&lt;character&gt;</code> is the specific character we are interested in. For this question, and the next, the character we will be looking at is Zelda. Putting it all together, we get the following code:
+                    <pre>
+                        <code class="language-python">import sqlite3 as sqlite
+
+# Connect to the database
+conn = sqlite.connect("ultimate_player_database.db")
+cursor = conn.cursor()
+
+# Query all the months in the database
+query = """
+SELECT STRFTIME('%m-%Y', start, 'unixepoch')
+FROM tournament_info
+WHERE start >= 1544158800
+GROUP BY STRFTIME('%m-%Y', start, 'unixepoch')
+ORDER BY START ASC;
+"""
+
+# Execute the query and convert the output from a list of tuples to a list of strings
+cursor.execute(query)
+months = cursor.fetchall()
+months = [ month[0] for month in months ]
+
+import pandas as pd
+
+# Create the DataFrame
+win_rate_df = pd.DataFrame(columns=["Month", "Games Won", "Games Reported", "Win-Rate"])
+
+# The desired character to check
+character = "ultimate/zelda"
+
+import json
+
+# Iterate through all of the months
+for month in months:
+    # Query all the tournaments that happened this month
+    query = f"""
+    SELECT key
+    FROM tournament_info
+    WHERE STRFTIME('%m-%Y', start, 'unixepoch') = '{month}';
+    """
+
+    # Execute the query and convert the data from a list of tuples to a list of strings
+    cursor.execute(query)
+    tournaments_in_month = cursor.fetchall()
+    tournaments_in_month = [ tournament[0] for tournament in tournaments_in_month ]
+
+    # Edge case: if there are no tournaments in this month (which shouldn't happen, but just in case) then skip this month
+    if len(tournaments_in_month) == 0:
+        win_rate_df.loc[len(win_rate_df)] = [ month, 0, 0, 0 ]
+        continue
+    
+    # Query to get all to get the game data from tournaments this month
+    query = f"""
+    SELECT game_data
+    FROM sets
+    WHERE tournament_key in { tuple(tournaments_in_month) if len(tournaments_in_month) == 0 else f"({tournaments_in_month[0]})" }
+      AND game_data IS NOT NULL
+      AND game_data != '[]'
+      AND game_data LIKE '%"{character}"%';
+    """
+
+    # Execute the query and convert the data from a list of tuples to a list of strings
+    cursor.execute(query)
+    sets_in_month_with_character = cursor.fetchall()
+    sets_in_month_with_character = [ sets_in_month_with_character[0] for set_in_month_with_character in sets_in_month_with_character ]
+
+    # Edge case: if there are no reported games for this character in this month (which is likely to happen) then skip this month
+    if len(sets_in_month_with_character) == 0:
+        win_rate_df.loc[len(win_rate_df)] = [ month, 0, 0, 0 ]
+        continue
+    
+    # Track the number of games won and teh number of games reported
+    games_reported = 0
+    games_won = 0
+
+    # For each set
+    for set_json in sets_in_month_with_character:
+        # Get the game data as an object
+        game_data = json.loads(set_json)
+    
+        # For each game in this set
+        for set in game_data:
+            # Get the winner and loser characters
+            winner_char = game["winner_char"]
+            loser_char = game["loser_char"]
+        
+            # Update the games reported and won counts
+            if winner_char == character:
+                games_reported += 1
+                games_won += 1
+
+            if loser_char == character:
+                games_reported += 1
+
+    # Calculate the win-rate (while accounting for the edge case of games_reported being 0 to prevent a divide by zero)
+    win_rate = 0
+
+    if games_reported != 0:
+        win_rate = games_won / games_reported
+
+    win_rate_df.loc[len(win_rates_df)] = [ month, games_won, games_reported, win_rate ]
+
+# Close the connection to the database
+cursor.close()
+conn.close()
+
+# Convert the dates from %m-%Y format to %B %Y format
+win_rate_df["Month"] = pd.to_datetime(win_rate_df["Month"], format="%m-%Y")
+win_rate_df["Month"] = win_rate_df["Month"].dt.strftime("%B %Y")</code>
+                    </pre>
+                    From here, we can export the data to a CSV file and graph the information:
+                    <pre>
+                        <code class="language-python"># Export the data to a CSV file
+win_rate_df.to_csv("data/zelda_win_rate.csv")
+
+import matplotlib.pyplot as plt
+
+# Graph the data to a line plot and a scatter plot
+plt.title("Zelda's Win-Rate Each Month")
+plt.xlabel("Month")
+plt.ylabel("Win-Rate")
+plt.xticks(rotation=90)
+plt.ylim(0.0, 1.0)
+plt.plot(win_rate_df["Month"].values, win_rate_df["Win-Rate"].values)
+plt.scatter(win_rate_df["Month"].values, win_rate_df["Win-Rate"].values)
+plt.show()</code>
+                    </pre>
+                    Using this, we can generate a chart like this:
+                    <br />
+                    <canvas id="zelda_win_rate_per_month_chart" style="width: 100%;"></canvas>
+                    <script type="module" src="zelda_win_rate_per_month_chart.js"></script>
+                    <br />
+                    We can see the win-rate has remained approximately the same around 0.5, but has gone slightly down over time. This could mean a few things. For example, it could mean that Zelda players are getting progressively worse, which is unlikely. It could mean players are gettig better against Zelda players, which is likely. It could mean many new players are joining whilst playing Zelda and are likely losing to more experienced and better players, which is most likely. While it is impossible to know the exact cause, we can speculate.
+                </p>
             </article>
             <article>
                 <h1>How has a character's popularity changed over time?</h1>
