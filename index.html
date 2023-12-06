@@ -29,6 +29,7 @@
                 </ul>
                 For this project, I have chosen to use the SmashData Ultimate Player Database (which can be downloaded from <a href="https://github.com/smashdata/ThePlayerDatabase">here</a>). I have specifically chosen to use <a href="https://github.com/smashdata/ThePlayerDatabase/releases/tag/v2023.11.26">this release</a>, which was published on November 27, 2023 and includes data up through November 26, 2023. This dataset is of great interest to me, as I am an active member of the Super Smash Bros. Ultimate community, both here at Penn State and outside of Penn State. I have met a lot of my closest friends through this community and feel that I, along with those friends and other members of the community, would be able to gain a lot from my analysis on this dataset. This dataset contains historical data on players and tournaments.
                 <br />
+                <br />
                 The data is stored in an SQLite database, meaning all relevant data must be acquired from said database. The said database contains the following tables:
                 <ul>
                     <li><code>players</code>, which contains information about players.</li>
@@ -38,6 +39,7 @@
                     <li><code>tournaments</code>, which contains information about tournaments.</li>
                 </ul>
                 For this project, I will only be using the <code>players</code>, <code>sets</code>, and <code>tournaments</code> tables, as they are the most relevant for my use case.
+                <br />
                 <br />
                 The questions I plan to answer with this assignment are as follows:
                 <ol>
@@ -66,6 +68,7 @@ GROUP BY STRFTIME('%m-%Y', start, 'unixepoch')
 ORDER BY start ASC;</code>
                     </pre>
                     This does include some form of data cleaning, as there are a few tournaments that are listed as starting before December 7, 2018 (the game's release date). We obviously don't want to include these, as they likely include incorrect/inaccurate data.
+                    <br />
                     <br />
                     From there, we can load the data into a DataFrame using the following code:
                     <pre>
@@ -101,7 +104,7 @@ average_entrants_over_time_df = pd.DataFrame(average_entrants_over_time, columns
 average_entrants_over_time_df["Month"] = pd.to_datetime(average_entrants_over_time_df["Month"], format="%m-%Y")
 average_entrants_over_time_df["Month"] = average_entrants_over_time_df["Month"].dt.strftime("%B %Y")</code>
                     </pre>
-                    Afterwards, we can export the data to a CSV file, as well as graph it using matplotlib.
+                    Afterwards, we can export the data to a CSV file, as well as graph it using Matplotlib.
                     <pre>
                         <code class="language-python"># Export the data to a CSV file
 average_entrants_over_time_df.to_csv("data/average_entrants_per_month.csv")
@@ -164,6 +167,113 @@ ORDER BY start ASC;</code>
             </article>
             <article>
                 <h1>Who are the most played characters of all time?</h1>
+                <p>
+                    This question requires the game data for each set in order to determine how many games were played by each character. First, this is the query we will be using:
+                    <pre>
+                        <code class="language-sql">/* Select the game data */
+SELECT game_data
+/* Select this data from the sets table */
+FROM sets
+/* Only select sets with valid game data */
+WHERE game_data IS NOT NULL
+  AND game_data != '[]';</code>
+                    </pre>
+                    After executing this query, we can put it into a DataFrame using teh following Python code:
+                    <pre>
+                        <code class="language-python">import sqlite3 as sqlite
+
+# Connect to the database
+conn = sqlite.connect("ultimate_player_database.db")
+cursor = conn.cursor()
+
+# Query the game data
+query = """
+SELECT game_data
+FROM sets
+WHERE game_data IS NOT NULL
+  AND game_data != '[]';
+"""
+
+# Execute the query and convert the output from a list of tuples to a list of strings
+cursor.execute(query)
+sets = cursor.fetchall()
+sets = [ set_json[0] for set_json in sets ]
+
+# Close the connection to the database
+cursor.close()
+conn.close()
+
+# Count the number of games reported for each character
+played_dict = dict()
+
+# A dictionary containing the cleaned names ofall of the characters
+character_name_dict = { ... }
+
+import json
+
+# For each of the reported sets
+for set_json in sets:
+    # Get the game data
+    game_data = json.loads(set_json)
+
+    # For each game in the set
+    for game in game_data:
+        # Get the reported winner and loser characters
+        winner_char = character_name_dict[game["winner_char"]]
+        loser_char = character_name_dict[game["loser_char"]]
+    
+        # Update the winner character's game count
+        if winner_char is not None:
+            if winner_char not in played_dict:
+                played_dict[winner_char] = 0
+            
+            played_dict[winner_char] += 1
+        
+        # Update the loser character's game count
+        if loser_char is not None:
+            if loser_char not in played_dict:
+                played_dict[loser_char] = 0
+            
+            played_dict[loser_char] += 1
+        
+# Sort the play count dictionary by game count descending
+played_dict = sorted(played_dict.items(), reverse=True, key=lambda character: character[1])
+
+import pandas as pd
+
+# Convert the dictionary to a DataFrame
+game_count_df = pd.DataFrame(played_dict, columns=["Character", "Games Reported"])</code>
+                    </pre>
+                    Afterwards, we can export this data to a CSV file and graph it:
+                    <pre>
+                        <code class="language-python"># Export the data to a CSV file
+game_count_df.to_csv("data/most_popular_characters_of_all_time.csv")
+
+import matplotlib.pyplot as plt
+
+# Plot the data
+plt.title("Popularity of Characters")
+plt.xlabel("Character")
+plt.ylabel("Games Reported")
+plt.xticks(rotation = 90)
+plt.bar(game_count_df["Character"].values, game_count_df["Games Reported"].values)
+plt.show()</code>
+                    </pre>
+                    This gives a graph like this:
+                    <br />
+                    <canvas id="most_popular_characters_of_all_time_chart" style="width: 100%;"></canvas>
+                    <script type="module" src="most_popular_characters_of_all_time.js"></script>
+                    <br />
+                    As we can see in the graph, the 5 most popular characters are:
+                    <ol>
+                        <li>Joker</li>
+                        <li>Cloud</li>
+                        <li>Bowser</li>
+                        <li>Palutena</li>
+                        <li>Ness</li>
+                    </ol>
+                    I feel as though all of these characters make sense. The former best player in the world, MKLeo, used to play Joker. Many players would likely want to emulate him, leading them towards this character. Cloud is also a very popular pick for a similar reason, this time with a current contender for one of the best players in the world, Sparg0. Bowser, Palutena, and Ness are all considered to be relatively easy characters, making them popular choices for many players. I am surprised not to see Steve, R.O.B., or Kazuya in the top 5, as all of these characters are considered to be the most "meta relevant."
+                </p>
             </article>
             <article>
                 <h1>How has a character's win-rate changed over time?</h1>

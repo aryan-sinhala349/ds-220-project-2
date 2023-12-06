@@ -179,8 +179,8 @@ for set_json in sets:
     game_data = json.loads(set_json[0])
 
     # For each game in the set
-    for game in set:
-        # Get teh reported winner and loser characters
+    for game in game_data:
+        # Get the reported winner and loser characters
         winner_char = character_name_dict[game["winner_char"]]
         loser_char = character_name_dict[game["loser_char"]]
 

@@ -1,21 +1,19 @@
-import average_entrants_per_month_data from "./data/average_entrants_per_month.json" assert { type: "json" };
+import most_popular_characters_of_all_time_data from "./data/most_popular_characters_of_all_time.json" assert { type: "json" };
 
-const average_entrants_per_month_x_data = Object.values(average_entrants_per_month_data[0]);
-const average_entrants_per_month_y_data = Object.values(average_entrants_per_month_data[1]);
+const most_popular_characters_of_all_time_x_data = Object.values(most_popular_characters_of_all_time_data[0]);
+const most_popular_characters_of_all_time_y_data = Object.values(most_popular_characters_of_all_time_data[1]);
 
-const average_entrants_per_month_chart = new Chart("average_entrants_per_month_chart",
+const most_popular_characters_of_all_time_chart = new Chart("most_popular_characters_of_all_time_chart",
 {
-    type: "line",
+    type: "bar",
     data:
     {
-        labels: average_entrants_per_month_x_data,
+        labels: most_popular_characters_of_all_time_x_data,
         datasets: 
         [
             {
-                label: "Average Entrants",
-                data: average_entrants_per_month_y_data,
-                fill: false,
-                borderColor: "rgb(0, 0, 255)",
+                label: "Games Reported",
+                data: most_popular_characters_of_all_time_y_data,
                 backgroundColor: "rgb(0, 0, 255)"
             }
         ]
@@ -32,7 +30,7 @@ const average_entrants_per_month_chart = new Chart("average_entrants_per_month_c
             title:
             {
                 display: true,
-                text: "Average Number of Entrants Over Time"
+                text: "Popularity of Characters"
             }
         },
         scales:
@@ -43,7 +41,7 @@ const average_entrants_per_month_chart = new Chart("average_entrants_per_month_c
                 {
                     display: true,
                     align: "center",
-                    text: "Month"
+                    text: "Character"
                 },
                 ticks:
                 {
@@ -59,10 +57,10 @@ const average_entrants_per_month_chart = new Chart("average_entrants_per_month_c
                 {
                     display: true,
                     align: "center",
-                    text: "Average Number of Entrants"
+                    text: "Games Reported"
                 },
                 min: 0,
-                max: 100
+                max: 450000
             }
         }
     }

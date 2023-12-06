@@ -44,6 +44,12 @@ const total_entrants_per_month_chart = new Chart("total_entrants_per_month_chart
                     display: true,
                     align: "center",
                     text: "Month"
+                },
+                ticks:
+                {
+                    autoSkip: false,
+                    maxRotation: 90,
+                    minRotation: 90
                 }
             },
             y:
