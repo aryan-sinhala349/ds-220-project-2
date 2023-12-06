@@ -3,9 +3,10 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="./index.css">
-        <link rel="stylesheet" href="highlightjs/styles/default.min.css">
-        <link rel="stylesheet" href="highlightjs/styles/atom-one-light.min.css">
-        <script src="highlightjs/highlight.min.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
         <title>DS 220 Project #2 - Aryan Sinha</title>
     </head>
@@ -50,6 +51,116 @@
             </p>
             <article>
                 <h1>How has the average number of entrants for tournaments changed over time?</h1>
+                <p>
+                    For all questions, we first need to query the database for the specified data. This question would use the following query:
+                    <pre>
+                        <code class="language-sql">/* Get the month and the average number of entrants that month */
+SELECT STRFTIME('%m-%Y', start, 'unixepoch'), AVG(entrants)
+/* From the tournament_info table */
+FROM tournament_info
+/* Where the tournament started on or after the game's launch */
+WHERE start >= 1544158800
+/* Group by month */
+GROUP BY STRFTIME('%m-%Y', start, 'unixepoch')
+/* Order by the start of the tournament in ascending order */
+ORDER BY start ASC;</code>
+                    </pre>
+                    This does include some form of data cleaning, as there are a few tournaments that are listed as starting before December 7, 2018 (the game's release date). We obviously don't want to include these, as they likely include incorrect/inaccurate data.
+                    <br />
+                    From there, we can load the data into a DataFrame using the following code:
+                    <pre>
+                        <code class="language-python">import sqlite3 as sqlite
+
+# Connect to the database
+conn = sqlite.connect("ultimate_player_database.db")
+cursor = conn.cursor()
+
+# Query the average number of entrants each month
+query = """
+SELECT STRFTIME('%m-%Y', start, 'unixepoch'), AVG(entrants)
+FROM tournament_info
+WHERE start >= 1544158800
+GROUP BY STRFTIME('%m-%Y', start, 'unixepoch')
+ORDER BY start ASC;
+"""
+
+# Execute the query
+cursor.execute(query)
+average_entrants_over_time = cursor.fetchall()
+
+# Close the connection to the database
+cursor.close()
+conn.close()
+
+import pandas as pd
+
+# Import the data into a DataFrame
+average_entrants_over_time_df = pd.DataFrame(average_entrants_over_time, columns=["Month", "Average Entrants"])
+
+# Convert the dates from %m-%Y format to %B %Y format
+average_entrants_over_time_df["Month"] = pd.to_datetime(average_entrants_over_time_df["Month"], format="%m-%Y")
+average_entrants_over_time_df["Month"] = average_entrants_over_time_df["Month"].dt.strftime("%B %Y")</code>
+                    </pre>
+                    Afterwards, we can export the data to a CSV file, as well as graph it using matplotlib.
+                    <pre>
+                        <code class="language-python"># Export the data to a CSV file
+average_entrants_over_time_df.to_csv("data/average_entrants_per_month.csv")
+
+import matplotlib.pyplot as plt
+
+# Create a line plot and a scatter plot with the data
+plt.title("Average Number of Entrants Over Time")
+plt.xlabel("Month")
+plt.ylabel("Average Number of Entrants")
+plt.xticks(rotation=90)
+plt.plot(average_entrants_over_time_df["Month"].values, average_entrants_over_time_df["Average Entrants"].values)
+plt.scatter(average_entrants_over_time_df["Month"].values, average_entrants_over_time_df["Average Entrants"].values)
+plt.show()
+                        </code>
+                    </pre>
+                    This code will generate a chart like this:
+                    <br />
+                    <canvas id="average_entrants_per_month_chart" style="width: 100%;"></canvas>
+                    <script type="module" src="average_entrants_per_month_chart.js"></script>
+                    <br />
+                    As you can see, there is a very strong downwards trend. It's easy to look at this and say the game is "dying" (losing its competitive popularity). However, this data does not identify the number of tournaments occurring each month, nor does it identify the total number of entrants each month. The former can be found using the following query and similar Python code:
+                    <pre>
+                        <code class="language-sql">/* Select the month and the number of tournaments */
+SELECT STRFTIME('%m-%Y', start, 'unixepoch'), COUNT(*)
+/* From the tournament_info table */
+FROM tournament_info
+/* That started after the game's release */
+WHERE start >= 1544158800
+/* Grouped by months */
+GROUP BY STRFTIME('%m-%Y', start, 'unixepoch')
+/* In order of start time in ascending order */
+ORDER BY start ASC;</code>
+                    </pre>
+                    Graphing this data using similar code as from before, we get this graph:
+                    <br />
+                    <canvas id="tournaments_per_month_chart" style="width: 100%;"></canvas>
+                    <script type="module" src="tournaments_per_month_chart.js"></script>
+                    <br />
+                    The latter can found using the following query (and again, similar Python code):
+                    <pre>
+                        <code class="language-sql">/* Select the month and the total number of entrants that month */
+SELECT STRFTIME('%m-%Y', start, 'unixepoch'), SUM(entrants) 
+/* From the tournament_info table */
+FROM tournament_info 
+/* That started after the game's release */
+WHERE start > 1544158800 
+/* Grouped by months */
+GROUP BY STRFTIME('%m-%Y', start, 'unixepoch') 
+/* In order of start time in ascending order */
+ORDER BY start ASC;</code>
+                    </pre>
+                    Which generates the following graph:
+                    <br />
+                    <canvas id="total_entrants_per_month_chart" style="width: 100%;"></canvas>
+                    <script type="module" src="total_entrants_per_month.js"></script>
+                    <br />
+                    As we can clearly see, there is an upwards trend for both the number of tournaments being run and the number of people entering tournaments. The game is not losing its competitive popularity. Rather, more people are running tournaments. The average number of entrants graph should not be used to determine if the game is "dying" or not, and should instead be used to predict how many entrants an average tournament should be getting. Furthermore, we could use this data to see potentially determine which months tend to have the most entrants. This data could also be used to determine other patterns and determine how certain events affected the game (for example, there is a large spike in April 2020 due to less tournaments being run, which was likely caused by the COVID-19 pandemic forcing everyone to move online).
+                </p>
             </article>
             <article>
                 <h1>Who are the most played characters of all time?</h1>
