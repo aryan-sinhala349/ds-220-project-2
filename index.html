@@ -639,6 +639,138 @@ plt.show()</code>
             </article>
             <article>
                 <h1>How has a player's set win-rate changed over time?</h1>
+                <p>
+                    We use similar code to the previous question, with the main difference being our new query for sets this player has competed in:
+                    <pre>
+                        <code class="language-sql">/* Select the winner's id */
+SELECT winner_id
+/* From the sets table */
+FROM sets
+/* From the specified tournaments */
+WHERE tournament_key IN (&lt;tournament_list&gt;)
+  /* Where the desired player played */
+  AND (p1_id = '&lt;player_id&gt;' OR p2_id = '&lt;player_id&gt;')
+  /* And neither player disqualified */
+  AND (p1_score >= 0 AND p2_score >= 0);</code>
+                    </pre>
+                    Instead of determining the score of each set, we're instead determining who won the set, which the database conveniently stores for us. Putting that all together, we get the following code:
+                    <pre>
+                        <code class="language-python">import sqlite3 as sqlite
+
+# Connect to the database
+conn = sqlite.connect("ultimate_player_database.db")
+cursor = conn.cursor()
+                            
+query = """
+SELECT STRFTIME('%m-%Y', start, 'unixepoch')
+FROM tournament_info
+WHERE start >= 1544158800
+GROUP BY STRFTIME('%m-%Y', start, 'unixepoch')
+ORDER BY START ASC;
+"""
+                            
+# Execute the query and convert the output from a list of tuples to a list of strings
+cursor.execute(query)
+months = cursor.fetchall()
+months = [ month[0] for month in months ]
+
+import pandas as pd
+
+# Create the DataFrame
+win_rate_df = pd.DataFrame(columns=["Month", "Sets Won", "Sets Played", "Win-Rate"])
+
+# Choose the desired player
+player_id = "823045"
+
+# Iterate through each month
+for month in months:
+    query = f"""
+    SELECT key
+    FROM tournament_info
+    WHERE STRFTIME('%m-%Y', start, 'unixepoch') = '{month}'
+      AND placings LIKE '%"{player_id}"%';
+    """
+
+    # Execute the query and convert the output from a list of tuples to a list of strings
+    cursor.execute(query)
+    tournaments_in_month_with_player = cursor.fetchall()
+    tournaments_in_month_with_player = [ tournament[0] for tournament in tournaments_in_month_with_player ]
+
+    # Account for the case where a player did not compete in a tournament at all this 
+    if len(tournaments_in_month_with_player) == 0:
+        win_rate_df.loc[len(win_rate_df)] = [ month, 0, 0, 0 ]
+        continue
+
+    query = f"""
+    SELECT winner_id
+    FROM sets
+    WHERE tournament_key IN {tuple(tournaments_in_month_with_player) if len(tournaments_in_month_with_player) != 1 else f"('{tournaments_in_month_with_player[0]}')"}
+      AND (p1_id = '{player_id}' OR p2_id = '{player_id}')
+      AND (p1_score >= 0 AND p2_score >= 0);
+    """
+
+    # Execute the query and convert the output from a list of tuples to a list of strings
+    cursor.execute(query)
+    sets_in_month_with_player = cursor.fetchall()
+    sets_in_month_with_player = [ set[0] for set in sets_in_month_with_player ]
+
+    # Account for the situation in which a player did not play in any sets in this month
+    if len(sets_in_month_with_player) == 0:
+        win_rate_df.loc[len(win_rate_df)] = [ month, 0, 0, 0 ]
+        continue
+
+    # Count the numebr of sets that were won and played this month
+    sets_won = 0
+    sets_played = 0
+
+    for winner_id in sets_in_month_with_player:
+        # Update counts accounting for who won the set
+        sets_played += 1
+
+        if winner_id == player_id:
+            sets_won += 1
+
+    # Calculate the win-rate
+    win_rate = 0
+
+    if sets_played != 0:
+        win_rate = sets_won / sets_played
+
+    # Update the DataFrame
+    win_rate_df.loc[len(win_rate_df)] = [ month, sets_won, sets_played, win_rate ]
+
+# Close the connection
+cursor.close()
+conn.close()
+
+# Convert the DataFrame's dates from %m-%Y to %B %Y format
+win_rate_df["Month"] = pd.to_datetime(win_rate_df["Month"], format="%m-%Y")
+win_rate_df["Month"] = win_rate_df["Month"].dt.strftime("%B %Y")</code>
+                    </pre>
+                    From here, we can export the dat as a CSV file and graph it:
+                    <pre>
+                        <code class="language-python"># Export the data to a CSV file
+win_rate_df.to_csv("data/shadic_set_win_rate.csv")
+
+import matplotlib.pyplot as plt
+
+# Graph the data
+plt.title("Shadic's Set Win-Rate Each Month")
+plt.xlabel("Month")
+plt.ylabel("Set Win-Rate")
+plt.xticks(rotation=90)
+plt.ylim(0.0, 1.0)
+plt.plot(win_rate_df["Month"].values, win_rate_df["Win-Rate"].values)
+plt.scatter(win_rate_df["Month"].values, win_rate_df["Win-Rate"].values)
+plt.show()</code>
+                    </pre>
+                    This gives the following graph:
+                    <br />
+                    <canvas id="shadic_set_win_rate_per_month_chart" style="width: 100%;"></canvas>
+                    <script type="module" src="shadic_set_win_rate_per_month_chart.js"></script>
+                    <br />
+                    We can see the set win-rate tends to follow the game win-rate (with the most obvious exceptions being October 2019 and December 2022, in which Shadic lost all sets and won all sets respectively), but Shadic's set win-rate has increased far more drastically than his game win-rate. Again, he has obviously improved as a player, but this also means he is likely playing a lot more "close" sets (i.e. in a best of 3 he wins 2-1 or in a best of 5 he wins 3-1 or 3-2), which would make sense because he is tending to play more top level players. We could use this data and the data from the previous question in order to determine which months tend to be best for players and which months tend to be worst for players.
+                </p>
             </article>
         </main>
         <footer>

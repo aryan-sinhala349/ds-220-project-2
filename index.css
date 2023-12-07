@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Source+Code+Pro&display=swap');
+
 body
 {
     margin-left: 20%;
@@ -7,6 +9,7 @@ body
 header
 {
     text-align: center;
+    font-family: 'Roboto', sans-serif;
 }
 
 header>h1
@@ -24,10 +27,12 @@ header>h2
 main
 {
     text-align: justify;
+    font-family: 'Roboto', sans-serif;
 }
 
 main code
 {
     background-color: #fafafa;
     border-radius: 2px;
+    font-family: 'Source Code Pro', monospace;
 }
